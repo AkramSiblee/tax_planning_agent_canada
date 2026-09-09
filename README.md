@@ -105,12 +105,13 @@ This will:
 3. Call your configured LLM to write the planning-recommendations narrative
 4. Write `clients/<client-slug>/outputs/Tax_Planning_Report.docx`
 5. Write `clients/<client-slug>/outputs/calculation_results.json` (the raw numbers, for your own records or for feeding into other tools)
+6. Write `clients/<client-slug>/outputs/Calculation_Results.xlsx` (the same raw numbers as a multi-tab workbook — Summary, SBD, Corporate Tax, Tax Pools, Payroll, GST-HST, Flags — for reviewing in Excel instead of JSON)
 
 **Useful flags:**
 
 ```bash
 python -m tax_agent.cli run --client <client-slug> --tax-year 2025   # pick a rate-table year
-python -m tax_agent.cli run --client <client-slug> --skip-narrative  # calc engine only, no LLM call, no report
+python -m tax_agent.cli run --client <client-slug> --skip-narrative  # calc engine only, no LLM call — still writes the JSON and Excel results, just no .docx
 python -m tax_agent.cli validate --client <client-slug>              # sanity-check the intake without running the full report
 ```
 

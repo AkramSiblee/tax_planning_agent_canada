@@ -24,6 +24,23 @@ that's a bug in the prompt or a hallucination — `narrative.py` includes a
 in the LLM's text that isn't traceable back to `CalculationResults`. Do not remove this
 check to make output "cleaner."
 
+## Three output files, not two
+
+`cli.py`'s `run` command writes three files to `clients/<slug>/outputs/`:
+
+1. `calculation_results.json` — raw `CalculationResults`, machine-readable.
+2. `Calculation_Results.xlsx` — the same raw numbers as a multi-tab workbook
+   (`reporting/excel_report.py::ExcelReportBuilder`), one tab per calc sub-result
+   (Summary, SBD, Corporate Tax, Tax Pools, Payroll, GST-HST, Flags). Like the JSON
+   file, this is pure calc-engine output — no LLM call, no narrative — so it is written
+   even when `--skip-narrative` is passed.
+3. `Tax_Planning_Report.docx` — the narrative report described below. Skipped when
+   `--skip-narrative` is passed or the LLM call fails.
+
+If `CalculationResults` gains a new field, update both `excel_report.py` and
+`docx_report.py` together — they read the same dataclass and should never drift into
+showing different numbers for the same run.
+
 ## Report structure (mirrors the original hand-built report)
 
 1. Title block (entity name, fiscal year, "planning aid, not filed advice" disclaimer)

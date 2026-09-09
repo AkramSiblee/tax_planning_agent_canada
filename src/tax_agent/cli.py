@@ -77,6 +77,12 @@ def cmd_run(args: argparse.Namespace) -> int:
     json_path.write_text(json.dumps(results_dict, indent=2, default=str), encoding="utf-8")
     print(f"Wrote {json_path}")
 
+    from tax_agent.reporting import ExcelReportBuilder
+
+    excel_path = outputs_dir / "Calculation_Results.xlsx"
+    ExcelReportBuilder(results).save(excel_path)
+    print(f"Wrote {excel_path}")
+
     print(f"\nEstimated corporate tax before credits: ${results.corporate_tax.total_tax_before_credits:,.2f}")
     print(f"Estimated year-end position: ${results.estimated_year_end_position:,.2f} "
           f"({'refund' if results.estimated_year_end_position >= 0 else 'owing'})")
