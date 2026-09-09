@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tax-planning-agent"
+version = "0.1.0"
+description = "CCPC (business) tax planning agent — deterministic calc engine + LLM-written recommendations"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
