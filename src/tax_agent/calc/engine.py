@@ -11,7 +11,12 @@ from dataclasses import dataclass, field
 
 from tax_agent.intake.schema import Intake
 
-from .corporate_tax import CorporateTaxResult, compute_corporate_tax
+from .corporate_tax import (
+    CorporateTaxResult,
+    CreditsResult,
+    apply_credits_to_part_i,
+    compute_corporate_tax,
+)
 from .dividends import DividendResult, compute_dividends
 from .gst import GstResult, compute_gst
 from .investment_income import InvestmentIncomeResult, classify_investment_income
@@ -29,6 +34,7 @@ class CalculationResults:
     sbd: SBDResult
     investment_income: InvestmentIncomeResult
     corporate_tax: CorporateTaxResult
+    credits: CreditsResult
     tax_pools: TaxPoolsResult
     dividends: DividendResult
     payroll: PayrollResult
@@ -110,11 +116,15 @@ def run_calculation(intake: Intake, tax_year: int) -> CalculationResults:
         + dividends.part_iii_1_tax
         + dividends.part_iii_tax
     )
+    credits = apply_credits_to_part_i(
+        part_i_tax=corp_tax.total_tax_before_credits,
+        sred_itc=intake.sred_itc,
+        provincial_credit=intake.provincial_credit,
+    )
     net_after_credits = (
         total_before_refund
         - dividends.dividend_refund
-        - intake.sred_itc
-        - intake.provincial_credit
+        - credits.credits_applied
     )
     year_end_position = intake.instalments_paid - net_after_credits
 
@@ -130,6 +140,12 @@ def run_calculation(intake: Intake, tax_year: int) -> CalculationResults:
     if intake.tosi_risk_shareholders:
         names = ", ".join(intake.tosi_risk_shareholders)
         flags.append(f"TOSI risk flagged for: {names}.")
+    if credits.unused_credits > 0:
+        flags.append(
+            f"${credits.unused_credits:,.2f} of SR&ED/provincial credits exceed Part I tax and "
+            f"are NOT reflected in the year-end position — confirm how much is refundable "
+            f"(e.g., the CCPC enhanced SR&ED ITC) versus carried forward."
+        )
     if dividends.cda_carryforward > 0:
         flags.append(
             f"${dividends.cda_carryforward:,.2f} Capital Dividend Account balance is unused."
@@ -175,6 +191,7 @@ def run_calculation(intake: Intake, tax_year: int) -> CalculationResults:
         sbd=sbd,
         investment_income=investment,
         corporate_tax=corp_tax,
+        credits=credits,
         tax_pools=tax_pools,
         dividends=dividends,
         payroll=payroll,

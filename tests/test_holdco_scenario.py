@@ -145,6 +145,26 @@ class TestHoldcoScenario:
         assert "Capital Dividend Account balance is unused" not in flags  # CDA fully used
 
 
+class TestCreditsOffsetPartIOnly:
+    def test_credits_capped_at_part_i_tax(self):
+        r = run_calculation(_holdco_intake(sred_itc=60_000, provincial_credit=40_000), tax_year=2026)
+        # 100,000 of credits vs 81,672.50 Part I tax: 81,672.50 applied, 18,327.50 unused
+        assert r.credits.credits_applied == pytest.approx(81_672.50, abs=0.01)
+        assert r.credits.unused_credits == pytest.approx(18_327.50, abs=0.01)
+        assert r.credits.part_i_tax_after_credits == pytest.approx(0, abs=0.01)
+        # Part IV (76,000) + III.1 (6,000) + III (18,000) - refund (111,666.67) = -11,666.67;
+        # the unused credits must NOT reduce Part IV or the penalty taxes.
+        assert r.net_corporate_tax_after_credits == pytest.approx(-11_666.67, abs=0.01)
+        assert any("18,327.50 of SR&ED/provincial credits exceed Part I tax" in f for f in r.flags)
+
+    def test_credits_below_part_i_tax_apply_in_full(self):
+        r = run_calculation(_holdco_intake(sred_itc=10_000, provincial_credit=5_000), tax_year=2026)
+        assert r.credits.credits_applied == pytest.approx(15_000)
+        assert r.credits.unused_credits == pytest.approx(0)
+        assert r.net_corporate_tax_after_credits == pytest.approx(70_005.83 - 15_000, abs=0.01)
+        assert not any("exceed Part I tax" in f for f in r.flags)
+
+
 class TestRefundOrdering:
     def test_non_eligible_dividends_spill_into_eligible_rdtoh(self):
         rates = load_rates(2026)

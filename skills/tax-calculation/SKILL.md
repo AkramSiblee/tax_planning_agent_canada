@@ -91,7 +91,19 @@ from `config/Tax_Rates_<year>.xlsx`:
 - Both penalty taxes are reported as if NO corrective election (s.185.1(2) / s.184(3)) is
   filed, and the engine flags the election in each case.
 - `net_corporate_tax_after_credits` = Part I + Part IV + Part III.1 + Part III −
-  dividend refund − SR&ED ITC − provincial credit.
+  dividend refund − credits applied.
+
+## Credits — `calc/corporate_tax.py::apply_credits_to_part_i()`
+
+SR&ED ITC and the provincial credit reduce **Part I tax only**, and never below zero —
+they cannot offset Part IV, Part III.1 or Part III tax. Any excess is reported as
+`unused_credits`, excluded from the year-end position, and flagged.
+
+**Simplifications**: both credits are applied against combined federal + provincial
+Part I tax (not each against its own government's tax); and because the intake does
+not split refundable from non-refundable credits, the excess is treated conservatively
+as not refunded this year — confirm the refundable portion (e.g., the CCPC 35% enhanced
+SR&ED ITC) by hand.
 
 ## Regression scenarios
 

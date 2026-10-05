@@ -110,6 +110,7 @@ class DocxReportBuilder:
                 ["Estimated Corporate Tax (before credits)", format_currency(r.corporate_tax.total_tax_before_credits)],
                 ["Part IV Tax on Dividends Received", format_currency(r.investment_income.part_iv_tax)],
                 ["Dividend Refund", format_currency(r.dividends.dividend_refund)],
+                ["Credits Applied (against Part I tax)", format_currency(r.credits.credits_applied)],
                 ["Net Corporate Tax After Credits", format_currency(r.net_corporate_tax_after_credits)],
                 ["Estimated Year-End Position", format_currency(r.estimated_year_end_position) + (" refund" if r.estimated_year_end_position >= 0 else " owing")],
                 ["GST/HST Net Tax", format_currency(r.gst.net_tax)],

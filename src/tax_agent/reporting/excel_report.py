@@ -86,6 +86,8 @@ class ExcelReportBuilder:
             ("Part IV Tax", r.investment_income.part_iv_tax, CURRENCY_FMT),
             ("Total Tax Payable Before Dividend Refund", r.total_tax_payable_before_refund, CURRENCY_FMT),
             ("Dividend Refund", r.dividends.dividend_refund, CURRENCY_FMT),
+            ("Credits Applied (against Part I tax only)", r.credits.credits_applied, CURRENCY_FMT),
+            ("Unused Credits (not in year-end position)", r.credits.unused_credits, CURRENCY_FMT),
             ("Net Corporate Tax After Credits", r.net_corporate_tax_after_credits, CURRENCY_FMT),
             ("Estimated Year-End Position (+ = refund)", r.estimated_year_end_position, CURRENCY_FMT),
             ("GST/HST Net Tax", r.gst.net_tax, CURRENCY_FMT),
