@@ -60,8 +60,14 @@ The agent never reads the Dashboard, but its formulas reproduce the engine's res
 (investment-income split, Part IV, credits against Part I only, dividend refund order,
 GRIP/CDA, Part III.1/III) so a reviewer in Excel sees the same numbers as the report.
 `tests/test_dashboard.py` compares the fixture's and template's cached Dashboard values
-with `run_calculation()`. If you change a calc rule, update the matching Dashboard formula
-in both workbooks (in Excel) or that test fails.
+with `run_calculation()`. If you change a calc rule, update `LAYOUT` in
+`tools/rebuild_dashboard.py` and rerun it on both workbooks, or that test fails:
+
+    python tools/rebuild_dashboard.py clients/_template/CCPC_Tax_Planning_Intake_Workbook.xlsx tests/fixtures/northern_peak_sample.xlsx
+
+It needs Windows, Excel and `pywin32` (deliberately not in `requirements.txt` — only
+maintainers need it). It is safe to rerun, edits a temporary copy outside OneDrive, and
+refuses to run if an input row it depends on has moved.
 
 ## Optional holdco section
 
