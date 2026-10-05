@@ -96,14 +96,23 @@ from `config/Tax_Rates_<year>.xlsx`:
 ## Credits — `calc/corporate_tax.py::apply_credits_to_part_i()`
 
 SR&ED ITC and the provincial credit reduce **Part I tax only**, and never below zero —
-they cannot offset Part IV, Part III.1 or Part III tax. Any excess is reported as
-`unused_credits`, excluded from the year-end position, and flagged.
+they cannot offset Part IV, Part III.1 or Part III tax.
+
+1. Non-refundable credits (SR&ED ITC − its refundable portion, + provincial credit) are
+   applied first. Their excess is `unused_credits`: carried forward, excluded from the
+   year-end position, and flagged.
+2. The refundable SR&ED portion (`sred_itc_refundable`, intake row "Refundable Portion
+   of SR&ED ITC ($)") reduces any Part I tax left; the rest is `refundable_itc_refund`,
+   paid in cash (s.127.1) and included in the year-end position, with a flag that it
+   depends on CRA accepting the claim.
+
+The refundable portion must be between 0 and the total SR&ED ITC (else `ValueError`).
+It defaults to 0 — fully non-refundable — when not supplied. The template defaults the
+row to the full ITC when "Enhanced 35% Refundable Rate Applies?" is Yes.
 
 **Simplifications**: both credits are applied against combined federal + provincial
-Part I tax (not each against its own government's tax); and because the intake does
-not split refundable from non-refundable credits, the excess is treated conservatively
-as not refunded this year — confirm the refundable portion (e.g., the CCPC 35% enhanced
-SR&ED ITC) by hand.
+Part I tax (not each against its own government's tax); the provincial credit is
+always treated as non-refundable.
 
 ## Regression scenarios
 

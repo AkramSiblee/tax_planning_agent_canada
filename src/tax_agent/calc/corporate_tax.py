@@ -20,30 +20,51 @@ class CorporateTaxResult:
 class CreditsResult:
     credits_claimed: float  # SR&ED ITC + provincial credit, as entered
     credits_applied: float  # amount that actually reduced Part I tax
-    unused_credits: float  # excess over Part I tax — refundable or carried forward, not modelled
+    refundable_itc_refund: float  # refundable SR&ED ITC paid out in cash (s.127.1)
+    unused_credits: float  # non-refundable excess over Part I tax — carried forward, not modelled
     part_i_tax_after_credits: float
 
 
-def apply_credits_to_part_i(*, part_i_tax: float, sred_itc: float, provincial_credit: float) -> CreditsResult:
+def apply_credits_to_part_i(
+    *,
+    part_i_tax: float,
+    sred_itc: float,
+    sred_itc_refundable: float,
+    provincial_credit: float,
+) -> CreditsResult:
     """
     Investment tax credits (s.127(5)) and provincial tax credits reduce Part I tax only —
     never Part IV, Part III.1 or Part III tax — and cannot take Part I tax below zero.
+
+    Ordering: the non-refundable credits (SR&ED ITC less its refundable portion, plus the
+    provincial credit) are applied first, because any excess only carries forward. The
+    refundable SR&ED portion then reduces what Part I tax remains, and the rest is paid
+    out in cash as a refundable ITC (s.127.1) — it improves the year-end position.
 
     Simplifications:
     - Part I tax here is the combined federal + provincial figure, so the SR&ED ITC
       (federal only) and the provincial credit (provincial only) are both applied against
       the combined amount rather than each against its own government's tax.
-    - Credits in excess of Part I tax are reported as `unused_credits` and do NOT improve
-      the year-end position. Part may be refundable (e.g., the 35% enhanced SR&ED ITC for
-      a CCPC under s.127.1, or a refundable provincial credit) and the rest carries forward;
-      the intake does not split refundable from non-refundable amounts.
+    - The provincial credit is treated as non-refundable; a refundable provincial
+      program's excess is reported in `unused_credits` and must be checked by hand.
+    - Non-refundable excess is reported as `unused_credits` (carried forward, 20 years for
+      ITCs) and does NOT improve the year-end position.
     """
-    claimed = sred_itc + provincial_credit
-    applied = min(claimed, max(0.0, part_i_tax))
+    if not 0 <= sred_itc_refundable <= sred_itc:
+        raise ValueError(
+            f"Refundable SR&ED ITC portion ({sred_itc_refundable:,.2f}) must be between 0 and "
+            f"the total SR&ED ITC ({sred_itc:,.2f})."
+        )
+    tax_room = max(0.0, part_i_tax)
+    non_refundable = (sred_itc - sred_itc_refundable) + provincial_credit
+    non_refundable_applied = min(non_refundable, tax_room)
+    refundable_applied = min(sred_itc_refundable, tax_room - non_refundable_applied)
+    applied = non_refundable_applied + refundable_applied
     return CreditsResult(
-        credits_claimed=claimed,
+        credits_claimed=sred_itc + provincial_credit,
         credits_applied=applied,
-        unused_credits=claimed - applied,
+        refundable_itc_refund=sred_itc_refundable - refundable_applied,
+        unused_credits=non_refundable - non_refundable_applied,
         part_i_tax_after_credits=part_i_tax - applied,
     )
 

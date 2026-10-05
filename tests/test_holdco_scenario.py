@@ -155,7 +155,7 @@ class TestCreditsOffsetPartIOnly:
         # Part IV (76,000) + III.1 (6,000) + III (18,000) - refund (111,666.67) = -11,666.67;
         # the unused credits must NOT reduce Part IV or the penalty taxes.
         assert r.net_corporate_tax_after_credits == pytest.approx(-11_666.67, abs=0.01)
-        assert any("18,327.50 of SR&ED/provincial credits exceed Part I tax" in f for f in r.flags)
+        assert any("18,327.50 of non-refundable credits exceed Part I tax" in f for f in r.flags)
 
     def test_credits_below_part_i_tax_apply_in_full(self):
         r = run_calculation(_holdco_intake(sred_itc=10_000, provincial_credit=5_000), tax_year=2026)
@@ -163,6 +163,36 @@ class TestCreditsOffsetPartIOnly:
         assert r.credits.unused_credits == pytest.approx(0)
         assert r.net_corporate_tax_after_credits == pytest.approx(70_005.83 - 15_000, abs=0.01)
         assert not any("exceed Part I tax" in f for f in r.flags)
+
+
+class TestRefundableSredItc:
+    def test_refundable_portion_paid_in_cash_after_non_refundable(self):
+        r = run_calculation(
+            _holdco_intake(sred_itc=60_000, sred_itc_refundable=50_000, provincial_credit=40_000),
+            tax_year=2026,
+        )
+        # Non-refundable 10,000 + 40,000 = 50,000 used first against 81,672.50 Part I tax;
+        # refundable 50,000 covers the remaining 31,672.50, and 18,327.50 is paid in cash.
+        assert r.credits.credits_applied == pytest.approx(81_672.50, abs=0.01)
+        assert r.credits.refundable_itc_refund == pytest.approx(18_327.50, abs=0.01)
+        assert r.credits.unused_credits == pytest.approx(0)
+        # -11,666.67 (Part IV + III.1 + III - dividend refund) - 18,327.50 cash ITC
+        assert r.net_corporate_tax_after_credits == pytest.approx(-29_994.17, abs=0.01)
+        assert any("18,327.50 of refundable SR&ED ITC" in f for f in r.flags)
+
+    def test_non_refundable_excess_still_carried_forward(self):
+        r = run_calculation(
+            _holdco_intake(sred_itc=60_000, sred_itc_refundable=10_000, provincial_credit=40_000),
+            tax_year=2026,
+        )
+        # Non-refundable 90,000 vs 81,672.50 tax -> 8,327.50 unused; refundable 10,000 all in cash.
+        assert r.credits.unused_credits == pytest.approx(8_327.50, abs=0.01)
+        assert r.credits.refundable_itc_refund == pytest.approx(10_000)
+        assert r.net_corporate_tax_after_credits == pytest.approx(-21_666.67, abs=0.01)
+
+    def test_refundable_portion_above_total_is_rejected(self):
+        with pytest.raises(ValueError, match="Refundable SR&ED ITC portion"):
+            run_calculation(_holdco_intake(sred_itc=10_000, sred_itc_refundable=12_000), tax_year=2026)
 
 
 class TestRefundOrdering:

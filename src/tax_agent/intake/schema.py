@@ -90,6 +90,11 @@ class Intake:
     # set it here; otherwise the engine uses the current year's AAII as a proxy.
     prior_year_aaii_override: float | None = None
 
+    # Portion of `sred_itc` that is refundable in cash (s.127.1) — e.g., the CCPC 35%
+    # enhanced ITC on current expenditures. Defaults to 0 (fully non-refundable), the
+    # conservative assumption. Must not exceed `sred_itc`.
+    sred_itc_refundable: float = 0.0
+
     # --- Investment-income detail and dividends paid (holdco scenarios) ---
     # Both optional: when None, the engine falls back to the single
     # `aggregate_investment_income` figure and assumes no dividends were paid.
