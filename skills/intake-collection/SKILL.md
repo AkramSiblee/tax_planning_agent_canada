@@ -54,6 +54,15 @@ are genuinely optional if a client doesn't apply (e.g., foreign income, life ins
 default to zero/empty rather than erroring — see `schema.py` for which fields are marked
 `required=True`.
 
+## The Dashboard tab mirrors the calc engine
+
+The agent never reads the Dashboard, but its formulas reproduce the engine's results
+(investment-income split, Part IV, credits against Part I only, dividend refund order,
+GRIP/CDA, Part III.1/III) so a reviewer in Excel sees the same numbers as the report.
+`tests/test_dashboard.py` compares the fixture's and template's cached Dashboard values
+with `run_calculation()`. If you change a calc rule, update the matching Dashboard formula
+in both workbooks (in Excel) or that test fails.
+
 ## Optional holdco section
 
 The bottom of '3. Income Statement' has two optional blocks, read by label
