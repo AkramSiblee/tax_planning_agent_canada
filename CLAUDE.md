@@ -47,7 +47,9 @@ citation requirements (Source + Last Verified columns) every time you change a v
 `tests/fixtures/northern_peak_sample.xlsx` is a fully filled, hand-verified sample
 scenario (an Alberta CCPC with an associated holdco, multi-province operations, TOSI
 risk, SR&ED, etc.) with known-correct expected outputs baked into
-`tests/test_calc_engine.py`. Any change to `calc/` must keep those assertions passing.
+`tests/test_calc_engine.py`. `tests/test_holdco_scenario.py` is the second hand-verified
+scenario (the associated holdco, on 2026 rates: Part IV, dividend refund, GRIP/CDA
+additions, Part III.1/Part III). Any change to `calc/` must keep both suites passing.
 If a change is supposed to alter one of those numbers, update the test's expected value
 **and** explain why in the commit message/PR description — a silent change to a tax
 number is exactly the kind of bug this test suite exists to catch.

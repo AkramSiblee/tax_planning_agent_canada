@@ -13,6 +13,34 @@ class MissingIntakeDataError(ValueError):
 
 
 @dataclass
+class InvestmentIncomeDetail:
+    """
+    Investment income split by type — needed whenever the corporation receives dividends,
+    realizes capital gains, or pays dividends out (typically a holdco). When this is
+    supplied, it replaces `Intake.aggregate_investment_income` for every calculation.
+    """
+    interest_and_rents: float = 0.0  # interest, net passive rents, other property income
+    taxable_capital_gains: float = 0.0  # the taxable portion only (net of the inclusion rate)
+    eligible_portfolio_dividends: float = 0.0  # from non-connected corporations
+    non_eligible_portfolio_dividends: float = 0.0
+    connected_eligible_dividends: float = 0.0  # from connected corporations (>10% votes & value, or controlled)
+    connected_non_eligible_dividends: float = 0.0
+    # Part IV on connected dividends = this corp's share of the payer's dividend refund,
+    # split by which of the PAYER's RDTOH pools the refund came from (payer's Schedule 3).
+    connected_part_iv_from_payer_eligible_rdtoh: float = 0.0
+    connected_part_iv_from_payer_non_eligible_rdtoh: float = 0.0
+    life_insurance_cda_credit: float = 0.0  # death benefit in excess of the policy's ACB
+
+
+@dataclass
+class DividendsPaid:
+    """Dividends the corporation paid to its own shareholders during the tax year."""
+    eligible: float = 0.0
+    non_eligible: float = 0.0
+    capital: float = 0.0  # paid under a s.83(2) capital dividend election
+
+
+@dataclass
 class Intake:
     # --- Entity Setup ---
     entity_name: str
@@ -61,3 +89,9 @@ class Intake:
     # (see skills/intake-collection/SKILL.md) — if the real prior-year AAII is known,
     # set it here; otherwise the engine uses the current year's AAII as a proxy.
     prior_year_aaii_override: float | None = None
+
+    # --- Investment-income detail and dividends paid (holdco scenarios) ---
+    # Both optional: when None, the engine falls back to the single
+    # `aggregate_investment_income` figure and assumes no dividends were paid.
+    investment_detail: InvestmentIncomeDetail | None = None
+    dividends_paid: DividendsPaid | None = None

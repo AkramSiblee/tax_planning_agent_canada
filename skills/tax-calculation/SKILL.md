@@ -25,8 +25,31 @@ see `tests/fixtures/`). If you change a formula, that regression test must still
   `calc/sbd.py::entity_sbd_limit()`.
 
 **Simplification**: AAII should technically be the *prior* year's figure. This engine
-uses the current year's as a proxy unless a `prior_year_aaii_override` is supplied in
-the intake. Flag this in any report output.
+uses the current year's adjusted AAII as a proxy unless a `prior_year_aaii_override` is
+supplied (intake label "Prior-Year Adjusted Aggregate Investment Income (for SBD grind)"
+on tab 5). When the proxy is used and the grind is non-zero, the engine raises a flag.
+
+## Investment Income & Part IV — `calc/investment_income.py`
+
+Used when the intake supplies `investment_detail` (the optional holdco section). Without
+it, the single AAII figure is treated as Part I investment income exactly as before.
+
+- **Part I investment income** = interest & passive rents + taxable capital gains. Taxed
+  at the investment-income rate (see Corporate Tax below).
+- **Dividends received** are deducted under s.112, so they are NOT in Part I income.
+- **Adjusted AAII for the grind** = Part I investment income + portfolio dividends
+  (s.125(7)). Connected-corporation dividends are excluded.
+- **Part IV tax** = 38 1/3% (`part_iv_tax_rate`) of portfolio dividends + this
+  corporation's share of each connected payer's dividend refund (an intake input — it
+  comes from the payer's Schedule 3 and can't be derived from the recipient's data).
+- Part IV on eligible portfolio dividends, and connected Part IV from the payer's
+  *eligible* RDTOH, go to eligible RDTOH; all other Part IV goes to non-eligible RDTOH.
+- **Non-taxable capital gains** = taxable gains x (1 - inclusion) / inclusion, using
+  `capital_gains_inclusion_rate` (1/2) → credits the CDA.
+
+**Simplifications**: no Part IV reduction for non-capital losses; adjusted AAII does not
+exclude gains on active-business assets or net capital loss carryovers; gains are
+assumed net of same-year capital losses.
 
 ## Corporate Tax — `calc/corporate_tax.py`
 
@@ -42,12 +65,42 @@ from `config/Tax_Rates_<year>.xlsx`:
 
 ## RDTOH / GRIP / CDA — `calc/rdtoh_grip_cda.py`
 
-- Non-eligible RDTOH addition this year: `aaii * 0.3067` (the refundable-tax fraction).
+- Non-eligible RDTOH addition: `part_i_investment_income * 0.3067` + Part IV routed to
+  non-eligible RDTOH. Eligible RDTOH addition: Part IV routed to eligible RDTOH.
 - Dividend needed to fully recover an RDTOH balance: `balance / 0.3833`.
-- GRIP and CDA are carried-forward balances only in v1 — no current-year addition is
-  calculated automatically (e.g., the non-taxable half of a capital gain is not yet
-  wired into CDA). If asked to model a CDA addition, treat it as a new function, not a
-  patch to the opening-balance passthrough.
+- **GRIP addition** (`grip_addition()`): `0.72 x ABI above the SBD limit` + eligible
+  dividends received (`grip_general_rate_factor`). Simplification: the real Schedule 53
+  base is taxable income less SBD income less AAII, which also reflects loss deductions.
+- **CDA addition** (`cda_addition()`): non-taxable capital gains + life insurance proceeds
+  over ACB. Capital dividends received are not modelled separately.
+- Balances in `TaxPoolsResult` are year-end, BEFORE dividends paid in the year.
+- The "lesser of" limits in s.129(4) other than 30 2/3% of investment income are not
+  modelled (they bind only with losses or foreign tax credits).
+
+## Dividends Paid — `calc/dividends.py`
+
+- **Dividend refund** at 38 1/3% of taxable dividends paid (s.129(1)): eligible dividends
+  recover eligible RDTOH only; non-eligible dividends recover non-eligible RDTOH first,
+  then any eligible RDTOH left after the eligible-dividend refund.
+- **Excessive eligible dividend designation** = eligible dividends paid − year-end GRIP
+  (including this year's addition). Part III.1 tax 20% (`part_iii_1_rate`); the extra
+  10% for the anti-avoidance case is not modelled.
+- **Excessive capital dividend** = capital dividends paid − year-end CDA. Part III tax
+  60% (`part_iii_rate`). Simplification: uses year-end CDA, not the CDA on the payment
+  date — a gain realized after the dividend was paid would not have counted.
+- Both penalty taxes are reported as if NO corrective election (s.185.1(2) / s.184(3)) is
+  filed, and the engine flags the election in each case.
+- `net_corporate_tax_after_credits` = Part I + Part IV + Part III.1 + Part III −
+  dividend refund − SR&ED ITC − provincial credit.
+
+## Regression scenarios
+
+- `tests/test_calc_engine.py`: Northern Peak Consulting Inc. (opco, 2025, legacy
+  single-AAII intake).
+- `tests/test_holdco_scenario.py`: Northern Peak Holdings Inc. (holdco, 2026): split
+  investment income, Part IV on portfolio + connected dividends, refund ordering, GRIP
+  and CDA additions, and both penalty taxes. Every expected value has its arithmetic
+  in a comment next to it.
 
 ## Payroll — `calc/payroll.py`
 

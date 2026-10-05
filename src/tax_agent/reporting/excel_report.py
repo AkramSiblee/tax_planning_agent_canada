@@ -83,6 +83,9 @@ class ExcelReportBuilder:
             ("Tax Year", r.tax_year, None),
             ("Net Income Before Tax", r.net_income_before_tax, CURRENCY_FMT),
             ("Estimated Corporate Tax (before credits)", r.corporate_tax.total_tax_before_credits, CURRENCY_FMT),
+            ("Part IV Tax", r.investment_income.part_iv_tax, CURRENCY_FMT),
+            ("Total Tax Payable Before Dividend Refund", r.total_tax_payable_before_refund, CURRENCY_FMT),
+            ("Dividend Refund", r.dividends.dividend_refund, CURRENCY_FMT),
             ("Net Corporate Tax After Credits", r.net_corporate_tax_after_credits, CURRENCY_FMT),
             ("Estimated Year-End Position (+ = refund)", r.estimated_year_end_position, CURRENCY_FMT),
             ("GST/HST Net Tax", r.gst.net_tax, CURRENCY_FMT),
@@ -115,18 +118,58 @@ class ExcelReportBuilder:
             ("Investment Income Rate Used", r.investment_income_rate_used, PERCENT_FMT),
         ])
 
+    def _build_investment_income(self, wb: Workbook) -> None:
+        r = self.results.investment_income
+        ws = wb.create_sheet("Investment Income")
+        _title_bar(ws, "Investment Income & Part IV Tax", span=2)
+        _write_rows(ws, [
+            ("Part I Investment Income (interest, rents, taxable gains)", r.part_i_investment_income, CURRENCY_FMT),
+            ("Adjusted AAII (current year, for SBD grind)", r.adjusted_aaii_for_grind, CURRENCY_FMT),
+            ("Total Dividends Received (s.112 deductible)", r.total_dividends_received, CURRENCY_FMT),
+            ("Eligible Dividends Received", r.eligible_dividends_received, CURRENCY_FMT),
+            ("Part IV on Portfolio Dividends", r.part_iv_on_portfolio_dividends, CURRENCY_FMT),
+            ("Part IV on Connected Dividends", r.part_iv_on_connected_dividends, CURRENCY_FMT),
+            ("Total Part IV Tax", r.part_iv_tax, CURRENCY_FMT),
+            ("Non-Taxable Capital Gains (to CDA)", r.non_taxable_capital_gains, CURRENCY_FMT),
+            ("Detailed Breakdown Supplied", r.used_detail, None),
+        ])
+
     def _build_tax_pools(self, wb: Workbook) -> None:
         r = self.results.tax_pools
         ws = wb.create_sheet("Tax Pools")
-        _title_bar(ws, "RDTOH, GRIP & CDA", span=2)
+        _title_bar(ws, "RDTOH, GRIP & CDA (year-end, before dividends paid)", span=2)
         _write_rows(ws, [
             ("Non-Eligible RDTOH Addition", r.non_eligible_rdtoh_addition, CURRENCY_FMT),
             ("Non-Eligible RDTOH Closing Balance", r.non_eligible_rdtoh_closing, CURRENCY_FMT),
+            ("Eligible RDTOH Addition", r.eligible_rdtoh_addition, CURRENCY_FMT),
             ("Eligible RDTOH Closing Balance", r.eligible_rdtoh_closing, CURRENCY_FMT),
+            ("GRIP Addition", r.grip_addition, CURRENCY_FMT),
             ("GRIP Available", r.grip_available, CURRENCY_FMT),
+            ("CDA Addition", r.cda_addition, CURRENCY_FMT),
             ("CDA Available", r.cda_available, CURRENCY_FMT),
             ("Dividend Needed to Recover Non-Eligible RDTOH", r.dividend_needed_to_recover_non_eligible_rdtoh, CURRENCY_FMT),
             ("Dividend Needed to Recover Eligible RDTOH", r.dividend_needed_to_recover_eligible_rdtoh, CURRENCY_FMT),
+        ])
+
+    def _build_dividends(self, wb: Workbook) -> None:
+        r = self.results.dividends
+        ws = wb.create_sheet("Dividends")
+        _title_bar(ws, "Dividends Paid, Refund & Designation Taxes", span=2)
+        _write_rows(ws, [
+            ("Eligible Dividends Paid", r.eligible_paid, CURRENCY_FMT),
+            ("Non-Eligible Dividends Paid", r.non_eligible_paid, CURRENCY_FMT),
+            ("Capital Dividends Paid", r.capital_paid, CURRENCY_FMT),
+            ("Refund from Eligible RDTOH", r.refund_from_eligible_rdtoh, CURRENCY_FMT),
+            ("Refund from Non-Eligible RDTOH", r.refund_from_non_eligible_rdtoh, CURRENCY_FMT),
+            ("Total Dividend Refund", r.dividend_refund, CURRENCY_FMT),
+            ("Non-Eligible RDTOH Carried Forward", r.non_eligible_rdtoh_carryforward, CURRENCY_FMT),
+            ("Eligible RDTOH Carried Forward", r.eligible_rdtoh_carryforward, CURRENCY_FMT),
+            ("Excessive Eligible Dividend Designation", r.excessive_eligible_designation, CURRENCY_FMT),
+            ("Part III.1 Tax (no election)", r.part_iii_1_tax, CURRENCY_FMT),
+            ("GRIP Carried Forward", r.grip_carryforward, CURRENCY_FMT),
+            ("Excessive Capital Dividend", r.excessive_capital_dividend, CURRENCY_FMT),
+            ("Part III Tax (no election)", r.part_iii_tax, CURRENCY_FMT),
+            ("CDA Carried Forward", r.cda_carryforward, CURRENCY_FMT),
         ])
 
     def _build_payroll(self, wb: Workbook) -> None:
@@ -171,7 +214,9 @@ class ExcelReportBuilder:
         self._build_summary(wb)
         self._build_sbd(wb)
         self._build_corporate_tax(wb)
+        self._build_investment_income(wb)
         self._build_tax_pools(wb)
+        self._build_dividends(wb)
         self._build_payroll(wb)
         self._build_gst(wb)
         self._build_flags(wb)

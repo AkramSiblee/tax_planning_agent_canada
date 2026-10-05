@@ -20,7 +20,7 @@ from tax_agent.excel_utils import (
 )
 
 from . import field_labels as L
-from .schema import Intake, MissingIntakeDataError
+from .schema import DividendsPaid, Intake, InvestmentIncomeDetail, MissingIntakeDataError
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,36 @@ def _read_income_statement(ws: Worksheet) -> dict:
         "aggregate_investment_income": find_value_by_label(ws, labels["aggregate_investment_income"], value_col=2) or 0.0,
         "net_income_before_tax": find_value_by_label(ws, labels["net_income_before_tax"], value_col=2) or 0.0,
     }
+
+
+def _read_optional_amounts(ws: Worksheet, labels: dict[str, str], value_col: int) -> dict[str, float] | None:
+    """
+    Reads every label in `labels`. Returns None if the section is absent OR left entirely
+    blank/zero, so an unused optional section never overrides the single-figure inputs.
+    """
+    raw = {
+        key: find_value_by_label(ws, label, value_col=value_col, required=False, default=None)
+        for key, label in labels.items()
+    }
+    if not any(raw.values()):
+        return None
+    return {key: float(value or 0.0) for key, value in raw.items()}
+
+
+def _read_investment_detail(ws: Worksheet) -> InvestmentIncomeDetail | None:
+    amounts = _read_optional_amounts(ws, L.INVESTMENT_DETAIL, value_col=2)
+    return None if amounts is None else InvestmentIncomeDetail(**amounts)
+
+
+def _read_dividends_paid(ws: Worksheet) -> DividendsPaid | None:
+    amounts = _read_optional_amounts(ws, L.DIVIDENDS_PAID, value_col=2)
+    return None if amounts is None else DividendsPaid(**amounts)
+
+
+def _read_prior_year_aaii(ws: Worksheet) -> float | None:
+    """None when the label is absent OR left blank — blank means 'unknown', not zero."""
+    value = find_value_by_label(ws, L.PRIOR_YEAR_AAII, value_col=3, required=False, default=None)
+    return None if value in (None, "") else float(value)
 
 
 def _read_prior_year_attributes(ws: Worksheet) -> dict:
@@ -167,6 +197,9 @@ def read_intake(workbook_path: str | Path) -> Intake:
         raise MissingIntakeDataError(str(exc)) from exc
 
     attrs = _read_prior_year_attributes(wb["5. Prior-Year Tax Attributes"])
+    prior_year_aaii = _read_prior_year_aaii(wb["5. Prior-Year Tax Attributes"])
+    investment_detail = _read_investment_detail(wb["3. Income Statement"])
+    dividends_paid = _read_dividends_paid(wb["3. Income Statement"])
     assoc = _read_associated_corporations(
         wb["7. Associated Corporations"], entity["entity_name"], entity["is_associated"]
     )
@@ -202,4 +235,7 @@ def read_intake(workbook_path: str | Path) -> Intake:
         sred_itc=credits_["sred_itc"],
         provincial_credit=credits_["provincial_credit"],
         tosi_risk_shareholders=tosi_risk,
+        prior_year_aaii_override=prior_year_aaii,
+        investment_detail=investment_detail,
+        dividends_paid=dividends_paid,
     )

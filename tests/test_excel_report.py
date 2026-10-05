@@ -22,7 +22,8 @@ def test_excel_report_builds_without_error(tmp_path):
 
     wb = load_workbook(out_path, data_only=True)
     assert wb.sheetnames == [
-        "Summary", "SBD", "Corporate Tax", "Tax Pools", "Payroll", "GST-HST", "Flags",
+        "Summary", "SBD", "Corporate Tax", "Investment Income", "Tax Pools", "Dividends",
+        "Payroll", "GST-HST", "Flags",
     ]
 
     summary = wb["Summary"]

@@ -24,6 +24,10 @@ STANDARD_LIMITATIONS_TEXT = [
     "The passive-income grind uses this year's investment income as a proxy for the "
     "prior-year AAII test the CRA actually applies — confirm the correct prior-year "
     "figure with your accountant.",
+    "Part III.1 and Part III taxes are shown as if no corrective election is filed; "
+    "dividend refunds assume the return is filed on time and dividends were paid while "
+    "the corporation was a CCPC. Confirm dividend timing against the CDA and GRIP on the "
+    "actual payment dates.",
     "This report does not model personal tax outcomes for individual shareholders; a "
     "separate Personal Tax module is planned to complete the salary/dividend and "
     "dividend-recovery analysis.",
@@ -104,6 +108,8 @@ class DocxReportBuilder:
             [
                 ["Net Income Before Tax", format_currency(r.net_income_before_tax)],
                 ["Estimated Corporate Tax (before credits)", format_currency(r.corporate_tax.total_tax_before_credits)],
+                ["Part IV Tax on Dividends Received", format_currency(r.investment_income.part_iv_tax)],
+                ["Dividend Refund", format_currency(r.dividends.dividend_refund)],
                 ["Net Corporate Tax After Credits", format_currency(r.net_corporate_tax_after_credits)],
                 ["Estimated Year-End Position", format_currency(r.estimated_year_end_position) + (" refund" if r.estimated_year_end_position >= 0 else " owing")],
                 ["GST/HST Net Tax", format_currency(r.gst.net_tax)],
@@ -141,6 +147,23 @@ class DocxReportBuilder:
                 ["Capital Dividend Account (CDA)", format_currency(r.tax_pools.cda_available)],
             ],
         )
+        d = r.dividends
+        if d.eligible_paid or d.non_eligible_paid or d.capital_paid:
+            self._heading("2.1  Dividends Paid This Year", level=2)
+            self._table(
+                ["Item", "Amount"],
+                [
+                    ["Eligible dividends paid", format_currency(d.eligible_paid)],
+                    ["Non-eligible dividends paid", format_currency(d.non_eligible_paid)],
+                    ["Capital dividends paid", format_currency(d.capital_paid)],
+                    ["Dividend refund", format_currency(d.dividend_refund)],
+                    ["Part III.1 tax (excess eligible designation)", format_currency(d.part_iii_1_tax)],
+                    ["Part III tax (excess capital dividend)", format_currency(d.part_iii_tax)],
+                    ["RDTOH carried forward", format_currency(d.non_eligible_rdtoh_carryforward + d.eligible_rdtoh_carryforward)],
+                    ["GRIP carried forward", format_currency(d.grip_carryforward)],
+                    ["CDA carried forward", format_currency(d.cda_carryforward)],
+                ],
+            )
 
     def _build_payroll_gst(self) -> None:
         r = self.results

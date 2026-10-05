@@ -51,3 +51,27 @@ SHAREHOLDERS_TOSI = {
     "name_column_header": "Shareholder Name",
     "not_excluded_value": "Not Excluded - TOSI Risk",
 }
+
+# Optional holdco section at the bottom of '3. Income Statement' (value in column B).
+# If NONE of these labels are present, the reader leaves Intake.investment_detail as
+# None and the engine uses the single AAII figure above (legacy workbooks keep working).
+INVESTMENT_DETAIL = {
+    "interest_and_rents": "Interest & Net Passive Rental Income (Part I)",
+    "taxable_capital_gains": "Taxable Capital Gains (taxable portion only)",
+    "eligible_portfolio_dividends": "Eligible Dividends Received - Portfolio",
+    "non_eligible_portfolio_dividends": "Non-Eligible Dividends Received - Portfolio",
+    "connected_eligible_dividends": "Eligible Dividends Received - Connected Corporation",
+    "connected_non_eligible_dividends": "Non-Eligible Dividends Received - Connected Corporation",
+    "connected_part_iv_from_payer_eligible_rdtoh": "Part IV on Connected Dividends - from Payer's Eligible RDTOH Refund",
+    "connected_part_iv_from_payer_non_eligible_rdtoh": "Part IV on Connected Dividends - from Payer's Non-Eligible RDTOH Refund",
+    "life_insurance_cda_credit": "Life Insurance Proceeds in Excess of ACB (CDA credit)",
+}
+
+DIVIDENDS_PAID = {
+    "eligible": "Eligible Dividends Paid",
+    "non_eligible": "Non-Eligible Dividends Paid",
+    "capital": "Capital Dividends Paid (s.83(2) election)",
+}
+
+# Optional, on '5. Prior-Year Tax Attributes' (value in column C).
+PRIOR_YEAR_AAII = "Prior-Year Adjusted Aggregate Investment Income (for SBD grind)"

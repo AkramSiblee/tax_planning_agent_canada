@@ -63,6 +63,8 @@ _FEDERAL_KEYS = [
     "investment_income_addon", "rdtoh_addition_rate", "dividend_refund_rate",
     "instalment_threshold", "taxable_capital_grind_start", "taxable_capital_grind_end",
     "passive_income_grind_start", "passive_income_grind_end",
+    "part_iv_tax_rate", "capital_gains_inclusion_rate", "grip_general_rate_factor",
+    "part_iii_1_rate", "part_iii_rate",
 ]
 _PAYROLL_KEYS = [
     "cpp_employee_max", "cpp2_employee_max", "cpp2_lower_threshold",

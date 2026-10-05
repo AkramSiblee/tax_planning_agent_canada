@@ -54,10 +54,29 @@ are genuinely optional if a client doesn't apply (e.g., foreign income, life ins
 default to zero/empty rather than erroring — see `schema.py` for which fields are marked
 `required=True`.
 
-## Known simplification carried from the original workbook
+## Optional holdco section
 
-The Excel Dashboard used this year's investment income as a stand-in for the prior-year
-AAII test. The Python reader does the same — it reads only the current intake, with no
-mechanism yet to pull a genuine prior-year figure. If a client's prior-year AAII is
-known, add it as an explicit override field rather than trying to make the current-year
-proxy "smarter" — see the TODO in `schema.py`.
+The bottom of '3. Income Statement' has two optional blocks, read by label
+(`field_labels.INVESTMENT_DETAIL` and `field_labels.DIVIDENDS_PAID`, value in column B):
+investment income split by type (interest/rents, taxable capital gains, portfolio and
+connected dividends, connected-dividend Part IV, life insurance CDA credit) and dividends
+paid (eligible, non-eligible, capital).
+
+**A block left entirely blank (or missing, in older workbooks) is read as `None`**, and
+the engine falls back to the single AAII figure. This is deliberate — an unused optional
+block must never replace a client's AAII with zeros.
+
+## Prior-year AAII
+
+'5. Prior-Year Tax Attributes' has an optional "Prior-Year Adjusted Aggregate Investment
+Income (for SBD grind)" row (column C). Blank means *unknown* (not zero): the engine then
+uses the current year as a proxy and flags it. A value — including 0 — overrides the proxy.
+
+## Editing the template workbook
+
+Saving with openpyxl drops the cached formula results, so `data_only=True` reads see
+blank totals. After any openpyxl edit, re-save the template in Excel (or recalculate via
+Excel COM / LibreOffice). Excel stores the cross-sheet dropdowns in an extension format
+that openpyxl warns about ("Data Validation extension is not supported") — the reader
+is unaffected, but do NOT re-save an Excel-saved template with openpyxl, or the
+dropdowns will be lost.
