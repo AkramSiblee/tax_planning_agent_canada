@@ -43,6 +43,7 @@ def _northern_peak_intake() -> Intake:
         instalments_paid=40_500,
         sred_itc=22_750,
         sred_itc_refundable=22_750,  # enhanced 35% rate applies -> fully refundable
+        provincial_credit_refundable=9_750,  # Alberta Innovation Employment Grant is refundable
         provincial_credit=9_750,
         tosi_risk_shareholders=["Daniel Okafor"],
         # Investment income split by type (fixture '3. Income Statement' holdco section).
@@ -140,8 +141,9 @@ class TestExcelReaderEndToEnd:
         assert self.intake.net_active_business_income == pytest.approx(190_000)
         assert self.intake.aggregate_investment_income == pytest.approx(55_000)
 
-    def test_refundable_sred_portion_read(self):
+    def test_refundable_credit_portions_read(self):
         assert self.intake.sred_itc_refundable == pytest.approx(22_750)
+        assert self.intake.provincial_credit_refundable == pytest.approx(9_750)
 
     def test_investment_detail_read_from_holdco_section(self):
         assert self.intake.investment_detail == _northern_peak_intake().investment_detail

@@ -41,6 +41,7 @@ CREDITS = {
     "sred_itc": "Estimated SR&ED Investment Tax Credit",
     "provincial_credit": "Provincial Credit Amount ($)",
     "sred_itc_refundable": "Refundable Portion of SR&ED ITC ($)",
+    "provincial_credit_refundable": "Refundable Portion of Provincial Credit ($)",
 }
 
 ASSOCIATED_CORPORATIONS = {

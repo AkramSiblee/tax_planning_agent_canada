@@ -190,6 +190,31 @@ class TestRefundableSredItc:
         assert r.credits.refundable_itc_refund == pytest.approx(10_000)
         assert r.net_corporate_tax_after_credits == pytest.approx(-21_666.67, abs=0.01)
 
+    def test_refundable_provincial_credit_paid_in_cash(self):
+        r = run_calculation(
+            _holdco_intake(
+                sred_itc=60_000, sred_itc_refundable=50_000,
+                provincial_credit=40_000, provincial_credit_refundable=30_000,
+            ),
+            tax_year=2026,
+        )
+        # Non-refundable 10,000 + 10,000 = 20,000 first (61,672.50 Part I tax left);
+        # SR&ED refundable 50,000 next (11,672.50 left); provincial refundable 30,000 covers
+        # 11,672.50 and 18,327.50 is paid in cash.
+        assert r.credits.credits_applied == pytest.approx(81_672.50, abs=0.01)
+        assert r.credits.refundable_itc_refund == pytest.approx(0, abs=0.01)
+        assert r.credits.refundable_provincial_refund == pytest.approx(18_327.50, abs=0.01)
+        assert r.credits.unused_credits == pytest.approx(0)
+        assert r.net_corporate_tax_after_credits == pytest.approx(-29_994.17, abs=0.01)
+        assert any("18,327.50 of refundable provincial credit" in f for f in r.flags)
+
+    def test_refundable_provincial_above_total_is_rejected(self):
+        with pytest.raises(ValueError, match="Refundable provincial credit portion"):
+            run_calculation(
+                _holdco_intake(provincial_credit=5_000, provincial_credit_refundable=6_000),
+                tax_year=2026,
+            )
+
     def test_refundable_portion_above_total_is_rejected(self):
         with pytest.raises(ValueError, match="Refundable SR&ED ITC portion"):
             run_calculation(_holdco_intake(sred_itc=10_000, sred_itc_refundable=12_000), tax_year=2026)

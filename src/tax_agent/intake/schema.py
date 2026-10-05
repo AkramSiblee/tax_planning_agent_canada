@@ -94,6 +94,9 @@ class Intake:
     # enhanced ITC on current expenditures. Defaults to 0 (fully non-refundable), the
     # conservative assumption. Must not exceed `sred_itc`.
     sred_itc_refundable: float = 0.0
+    # Portion of `provincial_credit` that is refundable in cash (e.g., Alberta's Innovation
+    # Employment Grant). Defaults to 0 (non-refundable). Must not exceed `provincial_credit`.
+    provincial_credit_refundable: float = 0.0
 
     # --- Investment-income detail and dividends paid (holdco scenarios) ---
     # Both optional: when None, the engine falls back to the single

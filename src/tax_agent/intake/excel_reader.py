@@ -159,6 +159,7 @@ def _read_credits(ws: Worksheet) -> dict:
         "sred_itc": find_value_by_label(ws, labels["sred_itc"], value_col=3, required=False) or 0.0,
         "provincial_credit": find_value_by_label(ws, labels["provincial_credit"], value_col=3, required=False) or 0.0,
         "sred_itc_refundable": find_value_by_label(ws, labels["sred_itc_refundable"], value_col=3, required=False) or 0.0,
+        "provincial_credit_refundable": find_value_by_label(ws, labels["provincial_credit_refundable"], value_col=3, required=False) or 0.0,
     }
 
 
@@ -236,6 +237,7 @@ def read_intake(workbook_path: str | Path) -> Intake:
         sred_itc=credits_["sred_itc"],
         provincial_credit=credits_["provincial_credit"],
         sred_itc_refundable=credits_["sred_itc_refundable"],
+        provincial_credit_refundable=credits_["provincial_credit_refundable"],
         tosi_risk_shareholders=tosi_risk,
         prior_year_aaii_override=prior_year_aaii,
         investment_detail=investment_detail,

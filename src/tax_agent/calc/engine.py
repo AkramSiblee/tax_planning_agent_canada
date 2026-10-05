@@ -121,12 +121,14 @@ def run_calculation(intake: Intake, tax_year: int) -> CalculationResults:
         sred_itc=intake.sred_itc,
         sred_itc_refundable=intake.sred_itc_refundable,
         provincial_credit=intake.provincial_credit,
+        provincial_credit_refundable=intake.provincial_credit_refundable,
     )
     net_after_credits = (
         total_before_refund
         - dividends.dividend_refund
         - credits.credits_applied
         - credits.refundable_itc_refund
+        - credits.refundable_provincial_refund
     )
     year_end_position = intake.instalments_paid - net_after_credits
 
@@ -146,13 +148,19 @@ def run_calculation(intake: Intake, tax_year: int) -> CalculationResults:
         flags.append(
             f"${credits.unused_credits:,.2f} of non-refundable credits exceed Part I tax and "
             f"are NOT reflected in the year-end position — they carry forward. Confirm the "
-            f"refundable SR&ED portion and whether the provincial credit is refundable."
+            f"refundable portions of the SR&ED ITC and the provincial credit."
         )
     if credits.refundable_itc_refund > 0:
         flags.append(
             f"${credits.refundable_itc_refund:,.2f} of refundable SR&ED ITC exceeds Part I tax "
             f"and is included in the year-end position as a cash refund — it is only paid "
             f"once CRA accepts the SR&ED claim (T661/Schedule 31)."
+        )
+    if credits.refundable_provincial_refund > 0:
+        flags.append(
+            f"${credits.refundable_provincial_refund:,.2f} of refundable provincial credit "
+            f"exceeds Part I tax and is included in the year-end position as a cash refund — "
+            f"confirm the program is refundable and the claim is accepted."
         )
     if dividends.cda_carryforward > 0:
         flags.append(

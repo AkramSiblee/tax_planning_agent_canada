@@ -80,3 +80,7 @@ Excel COM / LibreOffice). Excel stores the cross-sheet dropdowns in an extension
 that openpyxl warns about ("Data Validation extension is not supported") — the reader
 is unaffected, but do NOT re-save an Excel-saved template with openpyxl, or the
 dropdowns will be lost.
+
+This folder syncs to OneDrive, so Excel AutoSave can write a half-finished scripted edit
+to disk even if the script fails before saving. Back up the workbook (or rely on git)
+before scripting Excel, and diff it against the backup afterwards.

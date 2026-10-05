@@ -112,6 +112,7 @@ class DocxReportBuilder:
                 ["Dividend Refund", format_currency(r.dividends.dividend_refund)],
                 ["Credits Applied (against Part I tax)", format_currency(r.credits.credits_applied)],
                 ["Refundable SR&ED ITC (cash refund)", format_currency(r.credits.refundable_itc_refund)],
+                ["Refundable Provincial Credit (cash refund)", format_currency(r.credits.refundable_provincial_refund)],
                 ["Net Corporate Tax After Credits", format_currency(r.net_corporate_tax_after_credits)],
                 ["Estimated Year-End Position", format_currency(r.estimated_year_end_position) + (" refund" if r.estimated_year_end_position >= 0 else " owing")],
                 ["GST/HST Net Tax", format_currency(r.gst.net_tax)],

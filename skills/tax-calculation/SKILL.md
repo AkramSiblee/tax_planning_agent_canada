@@ -98,21 +98,23 @@ from `config/Tax_Rates_<year>.xlsx`:
 SR&ED ITC and the provincial credit reduce **Part I tax only**, and never below zero —
 they cannot offset Part IV, Part III.1 or Part III tax.
 
-1. Non-refundable credits (SR&ED ITC − its refundable portion, + provincial credit) are
-   applied first. Their excess is `unused_credits`: carried forward, excluded from the
-   year-end position, and flagged.
-2. The refundable SR&ED portion (`sred_itc_refundable`, intake row "Refundable Portion
-   of SR&ED ITC ($)") reduces any Part I tax left; the rest is `refundable_itc_refund`,
-   paid in cash (s.127.1) and included in the year-end position, with a flag that it
-   depends on CRA accepting the claim.
+1. Non-refundable credits (each credit less its refundable portion) are applied first.
+   Their excess is `unused_credits`: carried forward, excluded from the year-end
+   position, and flagged.
+2. The refundable portions then reduce any Part I tax left — SR&ED (`sred_itc_refundable`,
+   intake row "Refundable Portion of SR&ED ITC ($)") first, then provincial
+   (`provincial_credit_refundable`, row "Refundable Portion of Provincial Credit ($)").
+   The rest of each is paid in cash (`refundable_itc_refund`,
+   `refundable_provincial_refund`), included in the year-end position, and flagged.
+   The order between the two only changes how the cash is labelled, not the total.
 
-The refundable portion must be between 0 and the total SR&ED ITC (else `ValueError`).
-It defaults to 0 — fully non-refundable — when not supplied. The template defaults the
-row to the full ITC when "Enhanced 35% Refundable Rate Applies?" is Yes.
+Each refundable portion must be between 0 and its credit (else `ValueError`), and
+defaults to 0 — non-refundable — when not supplied. The template defaults the SR&ED row
+to the full ITC when "Enhanced 35% Refundable Rate Applies?" is Yes; the provincial row
+is left blank because refundability depends on the program.
 
-**Simplifications**: both credits are applied against combined federal + provincial
-Part I tax (not each against its own government's tax); the provincial credit is
-always treated as non-refundable.
+**Simplification**: both credits are applied against combined federal + provincial
+Part I tax, not each against its own government's tax.
 
 ## Regression scenarios
 
