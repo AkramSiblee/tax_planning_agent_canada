@@ -11,7 +11,7 @@ import pytest
 
 from tax_agent.calc import run_calculation
 from tax_agent.intake.excel_reader import read_intake
-from tax_agent.intake.schema import Intake
+from tax_agent.intake.schema import Intake, InvestmentIncomeDetail
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "northern_peak_sample.xlsx"
 
@@ -44,6 +44,17 @@ def _northern_peak_intake() -> Intake:
         sred_itc=22_750,
         provincial_credit=9_750,
         tosi_risk_shareholders=["Daniel Okafor"],
+        # Investment income split by type (fixture '3. Income Statement' holdco section).
+        # The 15,000 portfolio dividend is s.112-deductible and taxed under Part IV, not
+        # Part I; the 40,000 dividend from the connected sister holdco attracts Part IV
+        # equal to the holdco's full refund on it (40,000 x 38 1/3% = 15,333.33).
+        investment_detail=InvestmentIncomeDetail(
+            interest_and_rents=20_000,  # 12,000 interest + 8,000 net passive rent
+            taxable_capital_gains=20_000,
+            eligible_portfolio_dividends=15_000,
+            connected_non_eligible_dividends=40_000,
+            connected_part_iv_from_payer_non_eligible_rdtoh=15_333.33,
+        ),
     )
 
 
@@ -60,20 +71,31 @@ class TestCalcEngineWithHandBuiltIntake:
         assert self.results.sbd.abi_at_general_rate == pytest.approx(0)
         assert self.results.sbd.is_grinding is True
 
+    def test_investment_income_split(self):
+        inv = self.results.investment_income
+        assert inv.part_i_investment_income == pytest.approx(40_000)  # 20,000 + 20,000
+        assert inv.adjusted_aaii_for_grind == pytest.approx(55_000)  # + 15,000 portfolio divs
+        assert inv.part_iv_on_portfolio_dividends == pytest.approx(5_750, abs=0.01)  # 15,000 x 38 1/3%
+        assert inv.part_iv_on_connected_dividends == pytest.approx(15_333.33, abs=0.01)
+        assert inv.part_iv_tax == pytest.approx(21_083.33, abs=0.01)
+
     def test_corporate_tax(self):
         ct = self.results.corporate_tax
         assert ct.tax_on_sbd_income == pytest.approx(20_900)
         assert ct.tax_on_general_income == pytest.approx(0)
-        assert ct.tax_on_investment_income == pytest.approx(25_668.5, abs=0.5)
-        assert ct.total_tax_before_credits == pytest.approx(46_568.5, abs=0.5)
+        # 40,000 Part I investment income x 46.67% (was 55,000 x 46.67% = 25,668.50
+        # before the portfolio dividend was moved out of Part I)
+        assert ct.tax_on_investment_income == pytest.approx(18_668, abs=0.5)
+        assert ct.total_tax_before_credits == pytest.approx(39_568, abs=0.5)
 
     def test_tax_pools(self):
         tp = self.results.tax_pools
-        assert tp.non_eligible_rdtoh_addition == pytest.approx(16_868.5, abs=0.5)
-        assert tp.non_eligible_rdtoh_closing == pytest.approx(59_168.5, abs=0.5)
-        assert tp.eligible_rdtoh_closing == pytest.approx(18_500)
-        assert tp.grip_available == pytest.approx(65_000)
-        assert tp.cda_available == pytest.approx(22_000)
+        # 40,000 x 30.67% = 12,268 + 15,333.33 connected Part IV = 27,601.33
+        assert tp.non_eligible_rdtoh_addition == pytest.approx(27_601.33, abs=0.5)
+        assert tp.non_eligible_rdtoh_closing == pytest.approx(69_901.33, abs=0.5)
+        assert tp.eligible_rdtoh_closing == pytest.approx(24_250, abs=0.01)  # 18,500 + 5,750 Part IV
+        assert tp.grip_available == pytest.approx(80_000)  # 65,000 + 15,000 eligible divs received
+        assert tp.cda_available == pytest.approx(42_000)  # 22,000 + 20,000 untaxed half of gains
 
     def test_payroll(self):
         pr = self.results.payroll
@@ -86,14 +108,17 @@ class TestCalcEngineWithHandBuiltIntake:
         assert self.results.gst.net_tax == pytest.approx(11_900)
 
     def test_year_end_position(self):
-        # 46,568.50 - 22,750 - 9,750 = 14,068.50 net; 40,500 paid -> 26,431.50 refund
-        assert self.results.net_corporate_tax_after_credits == pytest.approx(14_068.5, abs=0.5)
-        assert self.results.estimated_year_end_position == pytest.approx(26_431.5, abs=0.5)
+        # 39,568 Part I + 21,083.33 Part IV = 60,651.33; no dividends paid, so no refund.
+        # 60,651.33 - 22,750 - 9,750 = 28,151.33 net; 40,500 paid -> 12,348.67 refund
+        assert self.results.total_tax_payable_before_refund == pytest.approx(60_651.33, abs=0.5)
+        assert self.results.net_corporate_tax_after_credits == pytest.approx(28_151.33, abs=0.5)
+        assert self.results.estimated_year_end_position == pytest.approx(12_348.67, abs=0.5)
 
     def test_flags(self):
         assert any("grinding" in f.lower() for f in self.results.flags)
         assert any("Daniel Okafor" in f for f in self.results.flags)
-        assert any("Capital Dividend" in f for f in self.results.flags)
+        assert any("Capital Dividend" in f and "42,000.00" in f for f in self.results.flags)
+        assert any("Part IV tax of $21,083.33" in f for f in self.results.flags)
 
 
 class TestExcelReaderEndToEnd:
@@ -114,8 +139,12 @@ class TestExcelReaderEndToEnd:
         assert self.intake.net_active_business_income == pytest.approx(190_000)
         assert self.intake.aggregate_investment_income == pytest.approx(55_000)
 
+    def test_investment_detail_read_from_holdco_section(self):
+        assert self.intake.investment_detail == _northern_peak_intake().investment_detail
+
     def test_calculated_total_tax_matches_hand_built_scenario(self):
-        assert self.results.corporate_tax.total_tax_before_credits == pytest.approx(46_568.5, abs=1.0)
+        assert self.results.corporate_tax.total_tax_before_credits == pytest.approx(39_568, abs=1.0)
+        assert self.results.net_corporate_tax_after_credits == pytest.approx(28_151.33, abs=1.0)
 
     def test_tosi_risk_detected(self):
         assert "Daniel Okafor" in self.intake.tosi_risk_shareholders

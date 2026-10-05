@@ -1,6 +1,7 @@
 """Tests the Excel results workbook independent of any LLM call — it never uses one."""
 from pathlib import Path
 
+import pytest
 from openpyxl import load_workbook
 
 from tax_agent.calc import run_calculation
@@ -29,11 +30,11 @@ def test_excel_report_builds_without_error(tmp_path):
     summary = wb["Summary"]
     summary_values = [row[1] for row in summary.iter_rows(min_row=4, max_col=2, values_only=True)]
     assert "Northern Peak Consulting Inc." in summary_values
-    assert 46568.50 in summary_values  # total tax before credits
+    assert pytest.approx(39568.0) in summary_values  # Part I tax before credits
 
     tax_pools = wb["Tax Pools"]
     tax_pools_values = [row[1] for row in tax_pools.iter_rows(min_row=4, max_col=2, values_only=True)]
-    assert 22000.0 in tax_pools_values  # CDA balance
+    assert pytest.approx(42000.0) in tax_pools_values  # CDA available (22,000 + 20,000)
 
     flags = wb["Flags"]
     flag_texts = [row[0] for row in flags.iter_rows(min_row=3, max_col=1, values_only=True)]

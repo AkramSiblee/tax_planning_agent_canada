@@ -202,9 +202,11 @@ def _set_by_label(ws, label, value, value_col):
 
 
 class TestIntakeReaderHoldcoSection:
-    def test_legacy_fixture_has_no_detail(self):
+    def test_fixture_without_dividends_paid(self):
+        # The opco fixture fills the investment-detail block but not dividends paid or
+        # prior-year AAII — each optional block is independent.
         intake = read_intake(FIXTURE_PATH)
-        assert intake.investment_detail is None
+        assert intake.investment_detail is not None
         assert intake.dividends_paid is None
         assert intake.prior_year_aaii_override is None
 

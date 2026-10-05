@@ -10,7 +10,7 @@ from tax_agent.reporting.docx_report import DocxReportBuilder
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "northern_peak_sample.xlsx"
 
-FAKE_NARRATIVE = """1. Elect a capital dividend now. The $22,000.00 CDA balance can be paid to shareholders tax-free.
+FAKE_NARRATIVE = """1. Elect a capital dividend now. The $42,000.00 CDA balance can be paid to shareholders tax-free.
 2. Review Daniel Okafor's TOSI exposure. His involvement level creates risk under the split-income rules.
 3. Monitor the passive-income grind. Aggregate investment income is already reducing the SBD limit."""
 
@@ -38,5 +38,6 @@ def test_docx_report_builds_without_error(tmp_path):
 
     assert "Northern Peak Consulting Inc." in full_text
     assert "Planning Recommendations" in full_text
-    assert "46,568.50" in full_text  # total tax before credits appears in the tax-position table
-    assert "22,000.00" in full_text  # CDA balance appears in the tax-pools table
+    assert "39,568.00" in table_text  # Part I tax before credits appears in the tax-position table
+    assert "21,083.33" in table_text  # Part IV tax appears in the executive summary
+    assert "42,000.00" in table_text  # CDA balance appears in the tax-pools table

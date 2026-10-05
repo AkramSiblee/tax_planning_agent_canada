@@ -95,8 +95,9 @@ from `config/Tax_Rates_<year>.xlsx`:
 
 ## Regression scenarios
 
-- `tests/test_calc_engine.py`: Northern Peak Consulting Inc. (opco, 2025, legacy
-  single-AAII intake).
+- `tests/test_calc_engine.py`: Northern Peak Consulting Inc. (opco, 2025). Investment
+  income is split by type: the portfolio dividend is taxed under Part IV, and the
+  dividend from the connected sister holdco carries Part IV equal to the holdco's refund.
 - `tests/test_holdco_scenario.py`: Northern Peak Holdings Inc. (holdco, 2026): split
   investment income, Part IV on portfolio + connected dividends, refund ordering, GRIP
   and CDA additions, and both penalty taxes. Every expected value has its arithmetic
